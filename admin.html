@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Old Reel | Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<style>
+:root {
+  --c1: #0a0a0a; --c2: #141414; --c3: #1a1a1a;
+  --gold1: #C9A96E; --gold2: #8B7355; --gold3: #E8D5B5;
+  --text: #F5F0E8; --text2: #A8A29E; --text3: #6B6560;
+  --border: rgba(201, 169, 110, 0.2);
+  --font-h: 'Playfair Display', serif;
+  --font-b: 'Inter', sans-serif;
+}
+[data-theme="light"] {
+  --c1: #F5F0E8; --c2: #E8E2D9; --c3: #EDE8E0;
+  --text: #1a1a1a; --text2: #4a4a4a; --text3: #8a8a8a;
+  --border: rgba(201, 169, 110, 0.3);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-b); background: var(--c1); color: var(--text); min-height: 100vh; transition: background 0.5s ease, color 0.5s ease; }
+
+.custom-cursor {
+  position: fixed; width: 28px; height: 28px;
+  border: 2px solid var(--gold1); border-radius: 50%;
+  pointer-events: none; z-index: 99999; transform: translate(-50%, -50%);
+  transition: width 0.25s ease, height 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  mix-blend-mode: difference;
+}
+.custom-cursor::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 5px; height: 5px; background: var(--gold1); border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: background 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+.custom-cursor.hover { width: 48px; height: 48px; border-color: var(--gold3); background: rgba(201, 169, 110, 0.08); }
+.custom-cursor.hover::after { width: 8px; height: 8px; background: var(--gold3); }
+@media (max-width: 768px) { .custom-cursor { display: none !important; } }
+
+.floating-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+.floating-icon { position: absolute; color: var(--gold1); opacity: 0.05; animation: floatAround linear infinite; font-size: 22px; }
+[data-theme="light"] .floating-icon { color: var(--gold2); opacity: 0.08; }
+@keyframes floatAround {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(40px, -60px) rotate(72deg); }
+  40% { transform: translate(-30px, -120px) rotate(144deg); }
+  60% { transform: translate(50px, -80px) rotate(216deg); }
+  80% { transform: translate(-20px, -40px) rotate(288deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+.scroll-progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--gold1), var(--gold3)); z-index: 10001; width: 0%; transition: width 0.1s linear; }
+
+.login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--c1), var(--c2)); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.login-box { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 24px; padding: 50px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.5); position: relative; z-index: 10; }
+.login-box h2 { font-family: var(--font-h); font-size: 32px; margin-bottom: 10px; color: var(--gold1); }
+.login-box p { color: var(--text2); margin-bottom: 30px; font-size: 14px; }
+.login-input { width: 100%; padding: 15px 20px; margin-bottom: 15px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 15px; font-family: var(--font-b); transition: all 0.3s ease; }
+.login-input:focus { outline: none; border-color: var(--gold1); background: rgba(201,169,110,0.1); box-shadow: 0 0 20px rgba(201,169,110,0.15); }
+.login-input::placeholder { color: var(--text3); }
+.login-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, var(--gold1), var(--gold2)); border: none; border-radius: 12px; color: var(--c1); font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.4s ease; font-family: var(--font-b); }
+.login-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(201,169,110,0.3); }
+.login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.error-msg { color: #ff6b6b; font-size: 14px; margin-top: 10px; min-height: 20px; }
+
+.admin-panel { display: none; min-height: 100vh; position: relative; z-index: 10; }
+.admin-header { background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+.admin-header h1 { font-family: var(--font-h); font-size: 24px; color: var(--gold1); }
+.admin-header .user-info { display: flex; align-items: center; gap: 15px; }
+.admin-header .user-info span { color: var(--text2); font-size: 14px; }
+.logout-btn { padding: 10px 25px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; color: var(--text); cursor: pointer; transition: all 0.3s ease; font-family: var(--font-b); font-size: 14px; }
+.logout-btn:hover { background: rgba(255,100,100,0.2); border-color: rgba(255,100,100,0.5); }
+
+.admin-nav { display: flex; gap: 10px; padding: 20px 40px; border-bottom: 1px solid var(--border); overflow-x: auto; position: relative; z-index: 10; }
+.nav-tab { padding: 12px 25px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; color: var(--text2); cursor: pointer; transition: all 0.3s ease; font-family: var(--font-b); font-size: 14px; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+.nav-tab:hover { background: rgba(201,169,110,0.1); border-color: var(--gold1); color: var(--text); }
+.nav-tab.active { background: linear-gradient(135deg, var(--gold1), var(--gold2)); border-color: transparent; color: var(--c1); box-shadow: 0 5px 20px rgba(201,169,110,0.3); }
+.nav-tab i { font-size: 16px; }
+
+.admin-content { padding: 40px; max-width: 1400px; margin: 0 auto; position: relative; z-index: 10; }
+.tab-content { display: none; animation: fadeIn 0.4s ease; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-title { font-family: var(--font-h); font-size: 28px; margin-bottom: 30px; color: var(--text); display: flex; align-items: center; gap: 15px; }
+.section-title i { color: var(--gold1); font-size: 24px; }
+
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; margin-bottom: 40px; }
+.card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; transition: all 0.4s ease; }
+.card:hover { border-color: var(--gold1); box-shadow: 0 15px 40px rgba(0,0,0,0.3); transform: translateY(-5px); }
+.card-image { width: 100%; height: 180px; object-fit: cover; }
+.card-body { padding: 20px; }
+.card-title { font-family: var(--font-h); font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+.card-meta { font-size: 13px; color: var(--gold1); margin-bottom: 12px; }
+.card-desc { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-actions { display: flex; gap: 10px; }
+.card-btn { flex: 1; padding: 10px; border-radius: 10px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; font-family: var(--font-b); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.card-btn-edit { background: rgba(201,169,110,0.15); color: var(--text); border: 1px solid var(--border); }
+.card-btn-edit:hover { background: var(--gold1); color: var(--c1); }
+.card-btn-delete { background: rgba(255,100,100,0.1); color: #ff9999; border: 1px solid rgba(255,100,100,0.3); }
+.card-btn-delete:hover { background: rgba(255,100,100,0.3); }
+
+.add-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--gold1), var(--gold2)); border: none; color: var(--c1); font-size: 24px; cursor: pointer; box-shadow: 0 10px 30px rgba(201,169,110,0.4); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 90; display: flex; align-items: center; justify-content: center; }
+.add-btn:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 15px 40px rgba(201,169,110,0.6); }
+
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-overlay.active { display: flex; }
+.modal { background: var(--c2); border: 1px solid var(--border); border-radius: 24px; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 40px; box-shadow: 0 30px 60px rgba(0,0,0,0.5); position: relative; z-index: 10; }
+.modal h3 { font-family: var(--font-h); font-size: 24px; margin-bottom: 25px; color: var(--text); }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 14px; color: var(--text2); margin-bottom: 8px; font-weight: 500; }
+.form-input { width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 15px; font-family: var(--font-b); transition: all 0.3s ease; }
+.form-input:focus { outline: none; border-color: var(--gold1); background: rgba(201,169,110,0.1); box-shadow: 0 0 20px rgba(201,169,110,0.15); }
+.form-input::placeholder { color: var(--text3); }
+textarea.form-input { min-height: 120px; resize: vertical; }
+.form-actions { display: flex; gap: 15px; margin-top: 30px; }
+.form-btn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: var(--font-b); }
+.form-btn-primary { background: linear-gradient(135deg, var(--gold1), var(--gold2)); color: var(--c1); }
+.form-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(201,169,110,0.4); }
+.form-btn-secondary { background: rgba(255,255,255,0.05); color: var(--text2); border: 1px solid var(--border); }
+.form-btn-secondary:hover { background: rgba(201,169,110,0.1); }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 16px; margin-bottom: 15px; transition: all 0.3s ease; }
+.toggle-row:hover { background: rgba(201,169,110,0.05); border-color: rgba(201,169,110,0.3); }
+.toggle-info { display: flex; align-items: center; gap: 15px; }
+.toggle-info i { font-size: 22px; color: var(--gold1); width: 30px; text-align: center; }
+.toggle-info span { font-size: 15px; color: var(--text); font-weight: 500; }
+.toggle-info small { display: block; color: var(--text2); font-size: 12px; margin-top: 2px; font-weight: 400; }
+.switch { position: relative; display: inline-block; width: 52px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.1); border: 1px solid var(--border); transition: 0.4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: var(--text2); transition: 0.4s; border-radius: 50%; }
+input:checked + .slider { background: linear-gradient(135deg, var(--gold1), var(--gold2)); border-color: transparent; }
+input:checked + .slider:before { transform: translateX(24px); background: var(--text); }
+
+.content-editor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
+.content-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 20px; padding: 25px; transition: all 0.3s ease; }
+.content-card:hover { border-color: rgba(201,169,110,0.3); }
+.content-card label { display: block; font-size: 12px; color: var(--gold1); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+.content-card textarea, .content-card input[type="text"], .content-card input[type="url"] { width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 15px; font-family: var(--font-b); transition: all 0.3s ease; }
+.content-card textarea { resize: vertical; min-height: 80px; }
+.content-card textarea:focus, .content-card input:focus { outline: none; border-color: var(--gold1); background: rgba(201,169,110,0.1); }
+
+.profile-upload { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 30px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 20px; }
+.profile-preview { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--gold1); box-shadow: 0 10px 30px rgba(201,169,110,0.3); }
+
+.theme-options { display: flex; gap: 15px; margin-bottom: 25px; }
+.theme-option { flex: 1; padding: 20px; border-radius: 16px; border: 2px solid var(--border); cursor: pointer; text-align: center; transition: all 0.3s ease; background: rgba(255,255,255,0.03); }
+.theme-option:hover { border-color: var(--gold1); }
+.theme-option.active { border-color: var(--gold1); background: rgba(201,169,110,0.15); }
+.theme-option i { font-size: 32px; margin-bottom: 10px; }
+.theme-option.light i { color: #f5c842; }
+.theme-option.dark i { color: var(--gold1); }
+.theme-option span { display: block; font-size: 14px; color: var(--text); }
+
+.toast { position: fixed; top: 30px; right: 30px; padding: 16px 24px; background: linear-gradient(135deg, var(--gold1), var(--gold2)); color: var(--c1); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateX(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1001; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.toast.show { transform: translateX(0); }
+.toast.error { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: #fff; }
+
+.info-box { background: rgba(201,169,110,0.08); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 30px; color: var(--text2); font-size: 14px; line-height: 1.8; }
+.info-box i { color: var(--gold1); margin-right: 8px; }
+.info-box code { background: rgba(201,169,110,0.2); padding: 2px 8px; border-radius: 4px; color: var(--text); font-family: monospace; }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+.empty-state i { font-size: 48px; color: var(--gold1); margin-bottom: 20px; opacity: 0.5; }
+.empty-state h3 { font-family: var(--font-h); font-size: 20px; margin-bottom: 10px; color: var(--text); }
+.empty-state p { font-size: 15px; }
+
+.video-type-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+.video-type-btn { flex: 1; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text2); cursor: pointer; font-family: var(--font-b); font-size: 14px; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.video-type-btn:hover { border-color: var(--gold1); color: var(--text); }
+.video-type-btn.active { background: linear-gradient(135deg, var(--gold1), var(--gold2)); border-color: transparent; color: var(--c1); }
+
+@media (max-width: 768px) {
+  .admin-header { padding: 15px 20px; }
+  .admin-header h1 { font-size: 18px; }
+  .admin-nav { padding: 15px 20px; }
+  .admin-content { padding: 20px; }
+  .login-box { padding: 30px 20px; }
+  .modal { padding: 25px; }
+  .content-editor-grid { grid-template-columns: 1fr; }
+  .cards-grid { grid-template-columns: 1fr; }
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--c1); }
+::-webkit-scrollbar-thumb { background: var(--gold1); border-radius: 3px; }
+
+/* Testimonial cards in admin */
+.testimonial-card-admin { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 20px; padding: 25px; transition: all 0.3s ease; position: relative; }
+.testimonial-card-admin:hover { border-color: rgba(201,169,110,0.3); }
+.testimonial-card-admin .t-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+.testimonial-card-admin .t-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold1); flex-shrink: 0; }
+.testimonial-card-admin .t-avatar-placeholder { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg,var(--gold1),var(--gold2)); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--c1); font-family: var(--font-h); font-weight: 700; flex-shrink: 0; }
+.testimonial-card-admin .t-name { font-family: var(--font-h); font-size: 18px; font-weight: 600; color: var(--text); }
+.testimonial-card-admin .t-role { font-size: 13px; color: var(--gold1); }
+.testimonial-card-admin .t-stars { color: var(--gold1); margin-bottom: 12px; font-size: 14px; }
+.testimonial-card-admin .t-text { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 20px; font-style: italic; }
+.testimonial-card-admin .t-date { font-size: 12px; color: var(--text3); margin-bottom: 15px; }
+.testimonial-card-admin .t-actions { display: flex; gap: 10px; align-items: center; }
+.status-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.status-badge.approved { background: rgba(37,211,102,0.15); color: #25D366; border: 1px solid rgba(37,211,102,0.3); }
+.status-badge.pending { background: rgba(255,193,7,0.15); color: #FFC107; border: 1px solid rgba(255,193,7,0.3); }
+
+</style>
+</head>
+<body>
+
+<div class="custom-cursor" id="customCursor"></div>
+<div class="scroll-progress" id="scrollProgress"></div>
+<div class="floating-bg" id="floatingBg"></div>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h2><i class="fas fa-shield-alt"></i> Admin Access</h2>
+    <p>Enter your credentials to access the editor</p>
+    <input type="email" class="login-input" id="loginEmail" placeholder="Email Address" value="admin@oldreel.com">
+    <input type="password" class="login-input" id="loginPassword" placeholder="Password">
+    <button class="login-btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<div class="admin-panel" id="adminPanel">
+  <div class="admin-header">
+    <h1><i class="fas fa-pen-fancy"></i> Old Reel Editor</h1>
+    <div class="user-info">
+      <span id="userEmail">admin@oldreel.com</span>
+      <button class="logout-btn" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </div>
+
+  <div class="admin-nav">
+    <button class="nav-tab active" onclick="switchTab('videos')" data-tab="videos"><i class="fas fa-video"></i> Videos</button>
+    <button class="nav-tab" onclick="switchTab('content')" data-tab="content"><i class="fas fa-font"></i> Site Content</button>
+    <button class="nav-tab" onclick="switchTab('social')" data-tab="social"><i class="fas fa-share-alt"></i> Social Links</button>
+    <button class="nav-tab" onclick="switchTab('appearance')" data-tab="appearance"><i class="fas fa-palette"></i> Appearance</button>
+    <button class="nav-tab" onclick="switchTab('profile')" data-tab="profile"><i class="fas fa-user"></i> Profile</button>
+    <button class="nav-tab" onclick="switchTab('testimonials')" data-tab="testimonials"><i class="fas fa-comments"></i> Testimonials</button>
+    <button class="nav-tab" onclick="switchTab('gear')" data-tab="gear"><i class="fas fa-cogs"></i> Apps</button>
+    <button class="nav-tab" onclick="switchTab('settings')" data-tab="settings"><i class="fas fa-sliders-h"></i> Settings</button>
+  </div>
+
+  <div class="admin-content">
+    <div class="tab-content active" id="tab-videos">
+      <h2 class="section-title"><i class="fas fa-video"></i> Manage Videos</h2>
+      <div class="info-box"><i class="fas fa-info-circle"></i> Add your video projects here. Choose between <b>YouTube</b> or <b>Google Drive</b>. Paste the video link. The thumbnail will be fetched automatically from the video. Changes appear instantly on the live site.</div>
+      <div class="cards-grid" id="videosList"></div>
+      <div class="empty-state" id="videosEmpty" style="display:none">
+        <i class="fas fa-folder-open"></i>
+        <h3>No Videos Yet</h3>
+        <p>Click the + button to add your first video</p>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-content">
+      <h2 class="section-title"><i class="fas fa-font"></i> Edit Site Content</h2>
+      <div class="info-box"><i class="fas fa-info-circle"></i> Edit any text on your portfolio website. Changes will appear instantly on the live site.</div>
+
+      <h3 style="margin:30px 0 20px;color:var(--text);font-size:20px"><i class="fas fa-heading" style="color:var(--gold1);margin-right:10px"></i>Hero Section</h3>
+      <div class="content-editor-grid">
+        <div class="content-card"><label>Your Name</label><input type="text" id="contentHeroName" placeholder="Ahmed Hassan"></div>
+        <div class="content-card"><label>Hero Title (Scramble Effect)</label><input type="text" id="contentHeroTitle" placeholder="Visual Storyteller"></div>
+        <div class="content-card"><label>Hero Subtitle</label><input type="text" id="contentHeroSubtitle" placeholder="I craft compelling narratives..."></div>
+        <div class="content-card" style="grid-column:1/-1"><label>Hero Description</label><textarea id="contentHeroDesc" placeholder="Short description..."></textarea></div>
+      </div>
+
+      <h3 style="margin:40px 0 20px;color:var(--text);font-size:20px"><i class="fas fa-user" style="color:var(--gold1);margin-right:10px"></i>About Section</h3>
+      <div class="content-editor-grid">
+        <div class="content-card"><label>Section Tag</label><input type="text" id="contentAboutTag" placeholder="About Me"></div>
+        <div class="content-card"><label>Section Title</label><input type="text" id="contentAboutTitle" placeholder="Who I Am"></div>
+        <div class="content-card" style="grid-column:1/-1"><label>About Animated Text</label><textarea id="contentAboutText" placeholder="I am a passionate video editor..."></textarea></div>
+        <div class="content-card"><label>Stat 1 (Projects)</label><input type="text" id="contentStat1" placeholder="150"></div>
+        <div class="content-card"><label>Stat 2 (Years)</label><input type="text" id="contentStat2" placeholder="8"></div>
+        <div class="content-card"><label>Stat 3 (Clients)</label><input type="text" id="contentStat3" placeholder="50"></div>
+      </div>
+
+      <h3 style="margin:40px 0 20px;color:var(--text);font-size:20px"><i class="fas fa-briefcase" style="color:var(--gold1);margin-right:10px"></i>Work Section</h3>
+      <div class="content-editor-grid">
+        <div class="content-card"><label>Section Tag</label><input type="text" id="contentWorkTag" placeholder="Services"></div>
+        <div class="content-card"><label>Section Title</label><input type="text" id="contentWorkTitle" placeholder="What I Offer"></div>
+      </div>
+
+      <h3 style="margin:40px 0 20px;color:var(--text);font-size:20px"><i class="fas fa-cogs" style="color:var(--gold1);margin-right:10px"></i>Gear Section</h3>
+      <div class="content-editor-grid">
+        <div class="content-card"><label>Section Tag</label><input type="text" id="contentGearTag" placeholder="My Arsenal"></div>
+        <div class="content-card"><label>Section Title</label><input type="text" id="contentGearTitle" placeholder="Software & Tools"></div>
+      </div>
+
+      <h3 style="margin:40px 0 20px;color:var(--text);font-size:20px"><i class="fas fa-globe" style="color:var(--gold1);margin-right:10px"></i>Site Identity</h3>
+      <div class="content-editor-grid">
+        <div class="content-card"><label>Site Title (Browser Tab)</label><input type="text" id="contentSiteTitle" placeholder="Old Reel | Visual Storyteller"></div>
+        <div class="content-card"><label>Footer Text</label><input type="text" id="contentFooter" placeholder="2025 Old Reel. All Rights Reserved."></div>
+      </div>
+
+      <div class="form-actions" style="margin-top:40px;max-width:400px">
+        <button class="form-btn form-btn-primary" onclick="saveContent()"><i class="fas fa-save"></i> Save All Content</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-social">
+      <h2 class="section-title"><i class="fas fa-share-alt"></i> Social Media Links</h2>
+      <div class="info-box"><i class="fas fa-info-circle"></i> Update your social media links and choose which ones to display on your portfolio. Toggle the switches to show/hide each platform.</div>
+      <div style="max-width:700px">
+        <div class="form-group"><label><i class="fab fa-instagram" style="color:var(--gold1);margin-right:8px"></i> Instagram URL</label><input type="url" class="form-input" id="socialInstagram" placeholder="https://instagram.com/yourhandle"></div>
+        <div class="form-group"><label><i class="fab fa-vimeo-v" style="color:var(--gold1);margin-right:8px"></i> Vimeo URL</label><input type="url" class="form-input" id="socialVimeo" placeholder="https://vimeo.com/yourhandle"></div>
+        <div class="form-group"><label><i class="fab fa-youtube" style="color:var(--gold1);margin-right:8px"></i> YouTube URL</label><input type="url" class="form-input" id="socialYoutube" placeholder="https://youtube.com/@yourhandle"></div>
+        <div class="form-group"><label><i class="fab fa-behance" style="color:var(--gold1);margin-right:8px"></i> Behance URL</label><input type="url" class="form-input" id="socialBehance" placeholder="https://behance.net/yourhandle"></div>
+        <div class="form-group"><label><i class="fab fa-linkedin-in" style="color:var(--gold1);margin-right:8px"></i> LinkedIn URL</label><input type="url" class="form-input" id="socialLinkedin" placeholder="https://linkedin.com/in/yourhandle"></div>
+        <div class="form-group"><label><i class="fab fa-twitter" style="color:var(--gold1);margin-right:8px"></i> Twitter URL</label><input type="url" class="form-input" id="socialTwitter" placeholder="https://twitter.com/yourhandle"></div>
+        <div class="form-group"><label><i class="fab fa-tiktok" style="color:var(--gold1);margin-right:8px"></i> TikTok URL</label><input type="url" class="form-input" id="socialTiktok" placeholder="https://tiktok.com/@yourhandle"></div>
+        <div class="form-group"><label><i class="fab fa-facebook" style="color:var(--gold1);margin-right:8px"></i> Facebook URL</label><input type="url" class="form-input" id="socialFacebook" placeholder="https://facebook.com/yourpage"></div>
+        <div class="form-group"><label><i class="fas fa-envelope" style="color:var(--gold1);margin-right:8px"></i> Contact Email</label><input type="email" class="form-input" id="socialEmail" placeholder="hello@oldreel.com"></div>
+        <div class="form-group"><label><i class="fab fa-whatsapp" style="color:var(--gold1);margin-right:8px"></i> WhatsApp Number (with country code)</label><input type="text" class="form-input" id="socialWhatsapp" placeholder="e.g. +201234567890"></div>
+
+        <h3 style="margin:30px 0 20px;color:var(--text);font-size:18px"><i class="fas fa-eye" style="color:var(--gold1);margin-right:10px"></i>Visibility Settings</h3>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-whatsapp"></i><div><span>WhatsApp</span><small>Show floating button on site</small></div></div><label class="switch"><input type="checkbox" id="showWhatsapp"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-instagram"></i><div><span>Instagram</span><small>Show on portfolio</small></div></div><label class="switch"><input type="checkbox" id="showInstagram"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-vimeo-v"></i><div><span>Vimeo</span><small>Show on portfolio</small></div></div><label class="switch"><input type="checkbox" id="showVimeo"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-youtube"></i><div><span>YouTube</span><small>Show on portfolio</small></div></div><label class="switch"><input type="checkbox" id="showYoutube"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-behance"></i><div><span>Behance</span><small>Show on portfolio</small></div></div><label class="switch"><input type="checkbox" id="showBehance"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-linkedin-in"></i><div><span>LinkedIn</span><small>Show on portfolio</small></div></div><label class="switch"><input type="checkbox" id="showLinkedin"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-twitter"></i><div><span>Twitter</span><small>Show on portfolio</small></div></div><label class="switch"><input type="checkbox" id="showTwitter"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-tiktok"></i><div><span>TikTok</span><small>Show on portfolio</small></div></div><label class="switch"><input type="checkbox" id="showTiktok"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><i class="fab fa-facebook"></i><div><span>Facebook</span><small>Show on portfolio</small></div></div><label class="switch"><input type="checkbox" id="showFacebook"><span class="slider"></span></label></div>
+
+        <div class="form-actions" style="margin-top:30px">
+          <button class="form-btn form-btn-primary" onclick="saveSocial()"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-appearance">
+      <h2 class="section-title"><i class="fas fa-palette"></i> Appearance Settings</h2>
+      <div class="info-box"><i class="fas fa-info-circle"></i> Customize how your portfolio looks. Choose between Light and Dark mode default.</div>
+
+      <h3 style="margin:30px 0 20px;color:var(--text);font-size:20px"><i class="fas fa-sun" style="color:var(--gold1);margin-right:10px"></i>Theme</h3>
+      <div class="theme-options">
+        <div class="theme-option light" id="themeLight" onclick="selectTheme('light')">
+          <i class="fas fa-sun"></i>
+          <span>Light Mode</span>
+        </div>
+        <div class="theme-option dark active" id="themeDark" onclick="selectTheme('dark')">
+          <i class="fas fa-moon"></i>
+          <span>Dark Mode</span>
+        </div>
+      </div>
+
+      <h3 style="margin:40px 0 20px;color:var(--text);font-size:20px"><i class="fas fa-eye" style="color:var(--gold1);margin-right:10px"></i>Section Visibility</h3>
+      <div class="toggle-row">
+        <div class="toggle-info"><i class="fas fa-cogs"></i><div><span>Gear Section</span><small>Show software/tools on your site</small></div></div>
+        <label class="switch"><input type="checkbox" id="toggleGear"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info"><i class="fas fa-comments"></i><div><span>Testimonials Section</span><small>Show client testimonials</small></div></div>
+        <label class="switch"><input type="checkbox" id="toggleTestimonials"><span class="slider"></span></label>
+      </div>
+
+      <div class="form-actions" style="margin-top:30px;max-width:400px">
+        <button class="form-btn form-btn-primary" onclick="saveAppearance()"><i class="fas fa-save"></i> Save Appearance</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-profile">
+      <h2 class="section-title"><i class="fas fa-user"></i> Profile Settings</h2>
+      <div class="info-box"><i class="fas fa-info-circle"></i> Update your profile image and hero image. Use direct image URLs (Imgur, Cloudinary, etc.).</div>
+
+      <div class="profile-upload">
+        <img src="" alt="Profile" class="profile-preview" id="profilePreview" style="display:none">
+        <div class="form-group" style="width:100%;">
+          <label>Profile Image URL</label>
+          <input type="url" class="form-input" id="profileImageUrl" placeholder="https://example.com/profile.jpg">
+        </div>
+        <button type="button" class="form-btn form-btn-primary" onclick="saveProfileImage()" style="width:auto;padding:10px 25px;"><i class="fas fa-save"></i> Save Profile Image</button>
+      </div>
+
+      <div class="profile-upload" style="margin-top:30px;">
+        <div class="form-group" style="width:100%;">
+          <label>Hero Image URL (Film Reel)</label>
+          <input type="url" class="form-input" id="heroImageUrl" placeholder="https://example.com/hero.jpg">
+        </div>
+        <button type="button" class="form-btn form-btn-primary" onclick="saveHeroImage()" style="width:auto;padding:10px 25px;"><i class="fas fa-save"></i> Save Hero Image</button>
+      </div>
+
+      <div class="profile-upload" style="margin-top:30px;">
+        <div class="form-group" style="width:100%;">
+          <label>Favicon URL <small style="color:var(--gold1)">(Browser tab icon, e.g. 32x32 PNG)</small></label>
+          <input type="url" class="form-input" id="faviconUrl" placeholder="https://example.com/favicon.png">
+        </div>
+        <button type="button" class="form-btn form-btn-primary" onclick="saveFavicon()" style="width:auto;padding:10px 25px;"><i class="fas fa-save"></i> Save Favicon</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-testimonials">
+      <h2 class="section-title"><i class="fas fa-comments"></i> Manage Testimonials</h2>
+      <div class="info-box"><i class="fas fa-info-circle"></i> Reviews submitted by visitors appear here. Toggle the <b>Approved</b> switch to show/hide each review on the live site. You can also delete unwanted reviews.</div>
+      <div class="cards-grid" id="testimonialsList"></div>
+      <div class="empty-state" id="testimonialsEmpty" style="display:none">
+        <i class="fas fa-inbox"></i>
+        <h3>No Reviews Yet</h3>
+        <p>Visitor reviews will appear here once submitted</p>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-gear">
+      <h2 class="section-title"><i class="fas fa-cogs"></i> Manage Apps</h2>
+      <div class="info-box"><i class="fas fa-info-circle"></i> Add or remove software/apps displayed on your site. Each app needs a <b>name</b> and a <b>Font Awesome icon class</b> (e.g. <code>fas fa-film</code> for Premiere Pro). Use the <b>Order</b> field to arrange them.</div>
+      <div class="cards-grid" id="gearList"></div>
+      <div class="empty-state" id="gearEmpty" style="display:none">
+        <i class="fas fa-tools"></i>
+        <h3>No Apps Yet</h3>
+        <p>Click the + button to add your first app</p>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-settings">
+      <h2 class="section-title"><i class="fas fa-sliders-h"></i> Settings</h2>
+      <div style="background:rgba(255,255,255,0.03);border-radius:16px;padding:30px;margin-top:20px">
+        <h3 style="color:var(--text);margin-bottom:20px;font-size:20px"><i class="fas fa-database" style="color:var(--gold1);margin-right:10px"></i>Realtime Database Structure</h3>
+        <div style="color:var(--text2);font-size:14px;line-height:2;font-family:monospace">
+          /oldreel<br>
+          &nbsp;&nbsp;/videos { object }<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;- id: { title, category, type, youtubeUrl, driveUrl, driveFileId, thumbnail, description, year, client, software, gallery[], createdAt }<br><br>
+          &nbsp;&nbsp;/settings<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;/social { urls + visibility toggles }<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;/appearance { theme, showGear, showTestimonials }<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;/content { all site text content }<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;/profile { profileImage, heroImage }<br><br>
+          <i class="fas fa-bolt" style="color:var(--gold1)"></i> All changes are <b>real-time</b>. No collections. No code edits.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="add-btn" id="addBtn" onclick="editingId=null;openModal()"><i class="fas fa-plus"></i></button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modalTitle">Add New Video</h3>
+    <form id="modalForm" onsubmit="event.preventDefault();saveItem();">
+      <input type="hidden" id="editId">
+      <div id="formFields"></div>
+      <div class="form-actions">
+        <button type="submit" class="form-btn form-btn-primary" id="saveBtn">Save</button>
+        <button type="button" class="form-btn form-btn-secondary" onclick="closeModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg">Saved successfully!</span></div>
+
+<script src="firebase-config.js"></script>
+<script>
+
+let currentTab = 'videos';
+let editingId = null;
+let galleryCount = 0;
+let selectedTheme = 'dark';
+let currentVideoType = 'drive';
+
+auth.onAuthStateChanged(user => {
+  if (user) { showAdmin(); }
+  else { showLogin(); }
+});
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminPanel').style.display = 'none';
+  gsap.from('.login-box', { opacity: 0, y: 50, duration: 0.8, ease: 'power3.out' });
+}
+
+function showAdmin() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminPanel').style.display = 'block';
+  document.getElementById('userEmail').textContent = auth.currentUser ? auth.currentUser.email : 'Admin';
+  loadData();
+  gsap.from('.admin-header', { opacity: 0, y: -30, duration: 0.6 });
+  gsap.from('.admin-nav', { opacity: 0, y: -20, duration: 0.6, delay: 0.1 });
+  gsap.from('.admin-content', { opacity: 0, y: 30, duration: 0.6, delay: 0.2 });
+}
+
+function handleLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const error = document.getElementById('loginError');
+  if (!email || !password) { error.textContent = 'Please fill in all fields'; return; }
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => { error.textContent = ''; })
+    .catch(err => { error.textContent = err.message; btn.disabled = false; btn.innerHTML = 'Sign In'; });
+}
+
+function handleLogout() { auth.signOut(); }
+
+document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') handleLogin();
+});
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  editingId = null;
+  loadData();
+  const addBtn = document.getElementById('addBtn');
+  if (tab === 'videos' || tab === 'gear') addBtn.style.display = 'flex';
+  else addBtn.style.display = 'none';
+}
+
+function loadData() {
+  if (currentTab === 'videos') loadVideos();
+  else if (currentTab === 'social') loadSocial();
+  else if (currentTab === 'content') loadContent();
+  else if (currentTab === 'appearance') loadAppearance();
+  else if (currentTab === 'profile') loadProfile();
+  else if (currentTab === 'testimonials') loadTestimonialsAdmin();
+  else if (currentTab === 'gear') loadGearAdmin();
+}
+
+function extractDriveFileId(url) {
+  if (!url) return null;
+  let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return match[1];
+  match = url.match(/id=([a-zA-Z0-9_-]+)/);
+  if (match) return match[1];
+  match = url.match(/([a-zA-Z0-9_-]{25,})/);
+  return match ? match[1] : null;
+}
+
+function extractYoutubeId(url) {
+  if (!url) return null;
+  let match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+}
+
+// VIDEOS CRUD - Realtime Database
+function loadVideos() {
+  const list = document.getElementById('videosList');
+  const empty = document.getElementById('videosEmpty');
+  list.innerHTML = '';
+  db.ref('oldreel/videos').once('value').then(snapshot => {
+    const videos = snapshot.val() || {};
+    const ids = Object.keys(videos).sort((a, b) => (videos[b].createdAt || 0) - (videos[a].createdAt || 0));
+    if (ids.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    ids.forEach(id => {
+      const p = videos[id];
+      const typeLabel = p.type === 'youtube' ? '<i class="fab fa-youtube"></i> YouTube' : '<i class="fab fa-google-drive"></i> Drive';
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = '<img src="' + (p.thumbnail || 'https://via.placeholder.com/400x180/1a1a1a/C9A96E?text=No+Image') + '" class="card-image" alt=""><div class="card-body"><div class="card-title">' + p.title + '</div><div class="card-meta">' + typeLabel + ' &bull; ' + (p.category || 'Video') + ' &bull; ' + (p.year || '2024') + '</div><div class="card-desc">' + (p.description || '') + '</div><div class="card-actions"><button class="card-btn card-btn-edit" onclick="editVideo(\'' + id + '\')"><i class="fas fa-edit"></i> Edit</button><button class="card-btn card-btn-delete" onclick="deleteVideo(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button></div></div>';
+      list.appendChild(card);
+    });
+  });
+}
+
+function openModal() {
+  if (currentTab === 'gear') { openGearModal(); return; }
+  document.getElementById('modalOverlay').classList.add('active');
+  document.getElementById('modalForm').reset();
+  document.getElementById('editId').value = editingId || '';
+  const fields = document.getElementById('formFields');
+  fields.innerHTML = '';
+  document.getElementById('modalTitle').textContent = editingId ? 'Edit Video' : 'Add New Video';
+
+  const typeSelector = document.createElement('div');
+  typeSelector.className = 'video-type-selector';
+  typeSelector.innerHTML =
+    '<button type="button" class="video-type-btn ' + (currentVideoType === 'drive' ? 'active' : '') + '" onclick="setVideoType(\'drive\')" id="btnDrive"><i class="fab fa-google-drive"></i> Google Drive</button>' +
+    '<button type="button" class="video-type-btn ' + (currentVideoType === 'youtube' ? 'active' : '') + '" onclick="setVideoType(\'youtube\')" id="btnYoutube"><i class="fab fa-youtube"></i> YouTube</button>';
+  fields.appendChild(typeSelector);
+
+  const hiddenType = document.createElement('input');
+  hiddenType.type = 'hidden';
+  hiddenType.id = 'fType';
+  hiddenType.value = currentVideoType;
+  fields.appendChild(hiddenType);
+
+  fields.innerHTML +=
+    '<div class="form-group"><label>Project Title</label><input type="text" class="form-input" id="fTitle" required></div>' +
+    '<div class="form-group"><label>Category</label><input type="text" class="form-input" id="fCategory" placeholder="e.g. Commercial, Music Video, Documentary"></div>' +
+    '<div class="form-group" id="driveUrlGroup" style="' + (currentVideoType === 'youtube' ? 'display:none' : '') + '"><label>Google Drive Share Link</label><input type="url" class="form-input" id="fDriveUrl" placeholder="https://drive.google.com/file/d/FILE_ID/view"></div>' +
+    '<div class="form-group" id="youtubeUrlGroup" style="' + (currentVideoType === 'drive' ? 'display:none' : '') + '"><label>YouTube Video URL</label><input type="url" class="form-input" id="fYoutubeUrl" placeholder="https://youtube.com/watch?v=VIDEO_ID"></div>' +
+    '<div class="form-group"><label>Thumbnail Image URL <small style="color:var(--gold1)">(Optional - auto-generated from video)</small></label><input type="url" class="form-input" id="fThumbnail" placeholder="Leave empty to auto-fetch from video"><div id="thumbPreview" style="margin-top:10px;display:none;"><img id="thumbPreviewImg" src="" style="max-width:200px;border-radius:8px;border:1px solid var(--border);"></div></div>' +
+    '<div class="form-group"><label>Description</label><textarea class="form-input" id="fDescription" placeholder="Describe the project..."></textarea></div>' +
+    '<div class="form-group"><label>Year</label><input type="text" class="form-input" id="fYear" placeholder="2024"></div>' +
+    '<div class="form-group"><label>Client</label><input type="text" class="form-input" id="fClient" placeholder="Client Name"></div>' +
+    '<div class="form-group"><label>Software Used</label><input type="text" class="form-input" id="fSoftware" placeholder="e.g. Premiere Pro, After Effects"></div>' +
+    '<div class="form-group"><label>Gallery Images <small style="color:var(--text2);font-weight:400;">(Optional extra image URLs)</small></label><div id="galleryFieldsContainer"></div><button type="button" class="form-btn form-btn-secondary" onclick="addGalleryUrlField()" style="margin-top:10px;width:auto;padding:10px 20px;font-size:14px;"><i class="fas fa-plus"></i> Add Gallery Image URL</button></div>';
+
+  galleryCount = 0;
+
+  // Auto-preview thumbnail on URL change
+  setTimeout(() => {
+    const driveInput = document.getElementById('fDriveUrl');
+    const youtubeInput = document.getElementById('fYoutubeUrl');
+    if (driveInput) driveInput.addEventListener('input', updateThumbnailPreview);
+    if (youtubeInput) youtubeInput.addEventListener('input', updateThumbnailPreview);
+  }, 100);
+
+  gsap.from('.modal', { opacity: 0, scale: 0.9, y: 30, duration: 0.4, ease: 'power3.out' });
+}
+
+function setVideoType(type) {
+  currentVideoType = type;
+  document.getElementById('fType').value = type;
+  document.getElementById('btnDrive').classList.toggle('active', type === 'drive');
+  document.getElementById('btnYoutube').classList.toggle('active', type === 'youtube');
+  document.getElementById('driveUrlGroup').style.display = type === 'drive' ? 'block' : 'none';
+  document.getElementById('youtubeUrlGroup').style.display = type === 'youtube' ? 'block' : 'none';
+}
+
+function updateThumbnailPreview() {
+  const type = document.getElementById('fType').value;
+  const driveUrl = document.getElementById('fDriveUrl') ? document.getElementById('fDriveUrl').value : '';
+  const youtubeUrl = document.getElementById('fYoutubeUrl') ? document.getElementById('fYoutubeUrl').value : '';
+  const fileId = extractDriveFileId(driveUrl);
+  const youtubeId = extractYoutubeId(youtubeUrl);
+  const previewDiv = document.getElementById('thumbPreview');
+  const previewImg = document.getElementById('thumbPreviewImg');
+
+  let thumbUrl = '';
+  if (type === 'youtube' && youtubeId) {
+    thumbUrl = 'https://img.youtube.com/vi/' + youtubeId + '/maxresdefault.jpg';
+  } else if (type === 'drive' && fileId) {
+    thumbUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000';
+  }
+
+  if (thumbUrl && !document.getElementById('fThumbnail').value.trim()) {
+    previewImg.src = thumbUrl;
+    previewDiv.style.display = 'block';
+  } else {
+    previewDiv.style.display = 'none';
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  editingId = null;
+  document.getElementById('editId').value = '';
+}
+
+function addGalleryUrlField() {
+  galleryCount++;
+  var container = document.getElementById('galleryFieldsContainer');
+  var wrapper = document.createElement('div');
+  wrapper.className = 'form-group';
+  wrapper.style.marginTop = '10px';
+  wrapper.id = 'galleryWrapper' + galleryCount;
+  wrapper.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><input type="url" class="form-input" id="galleryUrl' + galleryCount + '" placeholder="https://example.com/image.jpg" style="flex:1;"><button type="button" onclick="removeGalleryUrlField(' + galleryCount + ')" style="background:rgba(255,100,100,0.2);border:1px solid rgba(255,100,100,0.3);color:#ff9999;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;font-family:var(--font-b);"><i class="fas fa-trash"></i></button></div>';
+  container.appendChild(wrapper);
+}
+
+function removeGalleryUrlField(num) {
+  var wrapper = document.getElementById('galleryWrapper' + num);
+  if (wrapper) wrapper.remove();
+}
+
+async function saveItem() {
+  if (currentTab === 'gear') { saveGearItem(); return; }
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+  const editIdVal = document.getElementById('editId').value;
+  const type = document.getElementById('fType').value;
+
+  var galleryUrls = [];
+  for (var i = 1; i <= galleryCount; i++) {
+    var urlField = document.getElementById('galleryUrl' + i);
+    if (urlField && urlField.value.trim()) galleryUrls.push(urlField.value.trim());
+  }
+
+  const driveUrl = document.getElementById('fDriveUrl') ? document.getElementById('fDriveUrl').value : '';
+  const youtubeUrl = document.getElementById('fYoutubeUrl') ? document.getElementById('fYoutubeUrl').value : '';
+  const fileId = extractDriveFileId(driveUrl);
+  const youtubeId = extractYoutubeId(youtubeUrl);
+
+  // Auto-generate thumbnail if empty
+  let thumbnail = document.getElementById('fThumbnail').value.trim();
+  if (!thumbnail) {
+    if (type === 'youtube' && youtubeId) {
+      thumbnail = 'https://img.youtube.com/vi/' + youtubeId + '/maxresdefault.jpg';
+    } else if (type === 'drive' && fileId) {
+      thumbnail = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000';
+    }
+  }
+
+  const data = {
+    title: document.getElementById('fTitle').value,
+    category: document.getElementById('fCategory').value,
+    type: type,
+    driveUrl: driveUrl,
+    driveFileId: fileId,
+    youtubeUrl: youtubeUrl,
+    youtubeId: youtubeId,
+    thumbnail: thumbnail,
+    description: document.getElementById('fDescription').value,
+    year: document.getElementById('fYear').value,
+    client: document.getElementById('fClient').value,
+    software: document.getElementById('fSoftware').value,
+    gallery: galleryUrls,
+    createdAt: Date.now()
+  };
+
+  try {
+    const id = editIdVal || db.ref('oldreel/videos').push().key;
+    await db.ref('oldreel/videos/' + id).set(data);
+    closeModal();
+    loadVideos();
+    showToast('Video saved successfully!');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+  btn.disabled = false; btn.innerHTML = 'Save';
+}
+
+function editVideo(id) {
+  db.ref('oldreel/videos/' + id).once('value').then(snapshot => {
+    const p = snapshot.val();
+    if (p) {
+      editingId = id;
+      currentVideoType = p.type || 'drive';
+      openModal();
+      document.getElementById('editId').value = id;
+      document.getElementById('fTitle').value = p.title || '';
+      document.getElementById('fCategory').value = p.category || '';
+      if (document.getElementById('fDriveUrl')) document.getElementById('fDriveUrl').value = p.driveUrl || '';
+      if (document.getElementById('fYoutubeUrl')) document.getElementById('fYoutubeUrl').value = p.youtubeUrl || '';
+      document.getElementById('fThumbnail').value = p.thumbnail || '';
+      document.getElementById('fDescription').value = p.description || '';
+      document.getElementById('fYear').value = p.year || '';
+      document.getElementById('fClient').value = p.client || '';
+      document.getElementById('fSoftware').value = p.software || '';
+      if (p.gallery && p.gallery.length > 0) {
+        p.gallery.forEach(img => { addGalleryUrlField(); document.getElementById('galleryUrl' + galleryCount).value = img; });
+      }
+    }
+  });
+}
+
+function deleteVideo(id) {
+  if (!confirm('Are you sure you want to delete this project?')) return;
+  db.ref('oldreel/videos/' + id).remove().then(() => { loadVideos(); showToast('Project deleted!'); })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+// SOCIAL - Realtime Database
+function loadSocial() {
+  db.ref('oldreel/settings/social').once('value').then(snapshot => {
+    const d = snapshot.val() || {};
+    document.getElementById('socialInstagram').value = d.instagram || '';
+    document.getElementById('socialVimeo').value = d.vimeo || '';
+    document.getElementById('socialYoutube').value = d.youtube || '';
+    document.getElementById('socialBehance').value = d.behance || '';
+    document.getElementById('socialLinkedin').value = d.linkedin || '';
+    document.getElementById('socialTwitter').value = d.twitter || '';
+    document.getElementById('socialTiktok').value = d.tiktok || '';
+    document.getElementById('socialFacebook').value = d.facebook || '';
+    document.getElementById('socialEmail').value = d.email || '';
+    document.getElementById('socialWhatsapp').value = d.whatsapp || '';
+    document.getElementById('showWhatsapp').checked = d.showWhatsapp !== false;
+    document.getElementById('showInstagram').checked = d.showInstagram !== false;
+    document.getElementById('showVimeo').checked = d.showVimeo !== false;
+    document.getElementById('showYoutube').checked = d.showYoutube !== false;
+    document.getElementById('showBehance').checked = d.showBehance !== false;
+    document.getElementById('showLinkedin').checked = d.showLinkedin !== false;
+    document.getElementById('showTwitter').checked = d.showTwitter !== false;
+    document.getElementById('showTiktok').checked = d.showTiktok !== false;
+    document.getElementById('showFacebook').checked = d.showFacebook !== false;
+  });
+}
+
+function saveSocial() {
+  const data = {
+    instagram: document.getElementById('socialInstagram').value,
+    vimeo: document.getElementById('socialVimeo').value,
+    youtube: document.getElementById('socialYoutube').value,
+    behance: document.getElementById('socialBehance').value,
+    linkedin: document.getElementById('socialLinkedin').value,
+    twitter: document.getElementById('socialTwitter').value,
+    tiktok: document.getElementById('socialTiktok').value,
+    facebook: document.getElementById('socialFacebook').value,
+    email: document.getElementById('socialEmail').value,
+    whatsapp: document.getElementById('socialWhatsapp').value,
+    showWhatsapp: document.getElementById('showWhatsapp').checked,
+    showInstagram: document.getElementById('showInstagram').checked,
+    showVimeo: document.getElementById('showVimeo').checked,
+    showYoutube: document.getElementById('showYoutube').checked,
+    showBehance: document.getElementById('showBehance').checked,
+    showLinkedin: document.getElementById('showLinkedin').checked,
+    showTwitter: document.getElementById('showTwitter').checked,
+    showTiktok: document.getElementById('showTiktok').checked,
+    showFacebook: document.getElementById('showFacebook').checked
+  };
+  db.ref('oldreel/settings/social').set(data).then(() => { showToast('Social links saved!'); })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+// CONTENT - Realtime Database
+function loadContent() {
+  db.ref('oldreel/settings/content').once('value').then(snapshot => {
+    const d = snapshot.val() || {};
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('contentSiteTitle', d.siteTitle);
+    setVal('contentHeroName', d.heroName);
+    setVal('contentHeroTitle', d.heroTitle);
+    setVal('contentHeroSubtitle', d.heroSubtitle);
+    setVal('contentHeroDesc', d.heroDesc);
+    setVal('contentAboutTag', d.aboutTag);
+    setVal('contentAboutTitle', d.aboutTitle);
+    setVal('contentAboutText', d.aboutText);
+    setVal('contentStat1', d.stat1);
+    setVal('contentStat2', d.stat2);
+    setVal('contentStat3', d.stat3);
+    setVal('contentWorkTag', d.workTag);
+    setVal('contentWorkTitle', d.workTitle);
+    setVal('contentGearTag', d.gearTag);
+    setVal('contentGearTitle', d.gearTitle);
+    setVal('contentFooter', d.footer);
+  });
+}
+
+function saveContent() {
+  const data = {
+    siteTitle: document.getElementById('contentSiteTitle').value,
+    heroName: document.getElementById('contentHeroName').value,
+    heroTitle: document.getElementById('contentHeroTitle').value,
+    heroSubtitle: document.getElementById('contentHeroSubtitle').value,
+    heroDesc: document.getElementById('contentHeroDesc').value,
+    aboutTag: document.getElementById('contentAboutTag').value,
+    aboutTitle: document.getElementById('contentAboutTitle').value,
+    aboutText: document.getElementById('contentAboutText').value,
+    stat1: document.getElementById('contentStat1').value,
+    stat2: document.getElementById('contentStat2').value,
+    stat3: document.getElementById('contentStat3').value,
+    workTag: document.getElementById('contentWorkTag').value,
+    workTitle: document.getElementById('contentWorkTitle').value,
+    gearTag: document.getElementById('contentGearTag').value,
+    gearTitle: document.getElementById('contentGearTitle').value,
+    footer: document.getElementById('contentFooter').value,
+    updatedAt: Date.now()
+  };
+  db.ref('oldreel/settings/content').set(data).then(() => { showToast('Site content saved!'); })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+// APPEARANCE - Realtime Database
+function loadAppearance() {
+  db.ref('oldreel/settings/appearance').once('value').then(snapshot => {
+    const d = snapshot.val() || {};
+    document.getElementById('toggleGear').checked = d.showGear !== false;
+    document.getElementById('toggleTestimonials').checked = d.showTestimonials !== false;
+    selectTheme(d.theme || 'dark');
+  });
+}
+
+function selectTheme(theme) {
+  selectedTheme = theme;
+  document.getElementById('themeLight').classList.toggle('active', theme === 'light');
+  document.getElementById('themeDark').classList.toggle('active', theme === 'dark');
+}
+
+function saveAppearance() {
+  const data = {
+    theme: selectedTheme,
+    showGear: document.getElementById('toggleGear').checked,
+    showTestimonials: document.getElementById('toggleTestimonials').checked,
+    updatedAt: Date.now()
+  };
+  db.ref('oldreel/settings/appearance').set(data).then(() => { showToast('Appearance settings saved!'); })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+// PROFILE - Realtime Database
+function loadProfile() {
+  db.ref('oldreel/settings/profile').once('value').then(snapshot => {
+    const d = snapshot.val() || {};
+    if (d.profileImage) {
+      const img = document.getElementById('profilePreview');
+      img.src = d.profileImage; img.style.display = 'block';
+      document.getElementById('profileImageUrl').value = d.profileImage;
+    }
+    if (d.heroImage) {
+      document.getElementById('heroImageUrl').value = d.heroImage;
+    }
+    if (d.favicon) {
+      document.getElementById('faviconUrl').value = d.favicon;
+    }
+  });
+}
+
+function saveProfileImage() {
+  const url = document.getElementById('profileImageUrl').value.trim();
+  if (!url) { showToast('Please enter an image URL', 'error'); return; }
+  db.ref('oldreel/settings/profile').update({ profileImage: url, updatedAt: Date.now() })
+    .then(() => { showToast('Profile image saved!'); loadProfile(); })
+    .catch(err => showToast('Error: ' + err.message, 'error'));
+}
+
+function saveHeroImage() {
+  const url = document.getElementById('heroImageUrl').value.trim();
+  if (!url) { showToast('Please enter an image URL', 'error'); return; }
+  db.ref('oldreel/settings/profile').update({ heroImage: url, updatedAt: Date.now() })
+    .then(() => { showToast('Hero image saved!'); })
+    .catch(err => showToast('Error: ' + err.message, 'error'));
+}
+
+function saveFavicon() {
+  const url = document.getElementById('faviconUrl').value.trim();
+  if (!url) { showToast('Please enter a favicon URL', 'error'); return; }
+  db.ref('oldreel/settings/profile').update({ favicon: url, updatedAt: Date.now() })
+    .then(() => { showToast('Favicon saved!'); })
+    .catch(err => showToast('Error: ' + err.message, 'error'));
+}
+
+// TESTIMONIALS ADMIN
+function loadTestimonialsAdmin() {
+  const list = document.getElementById('testimonialsList');
+  const empty = document.getElementById('testimonialsEmpty');
+  list.innerHTML = '';
+  db.ref('oldreel/testimonials').once('value').then(snapshot => {
+    const data = snapshot.val() || {};
+    const entries = Object.entries(data).sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+    if (entries.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    entries.forEach(([id, t]) => {
+      const card = document.createElement('div');
+      card.className = 'testimonial-card-admin';
+      const statusClass = t.approved ? 'approved' : 'pending';
+      const statusText = t.approved ? 'Approved' : 'Pending';
+      const avatarHtml = t.avatar
+        ? '<img src="' + t.avatar + '" class="t-avatar" alt="">'
+        : '<div class="t-avatar-placeholder">' + (t.name ? t.name.charAt(0).toUpperCase() : '?') + '</div>';
+      const dateStr = t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '';
+      let starsHtml = '';
+      for (let i = 1; i <= 5; i++) {
+        starsHtml += i <= (t.rating || 5) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+      }
+      card.innerHTML =
+        '<div class="t-header">' + avatarHtml +
+        '<div><div class="t-name">' + (t.name || 'Anonymous') + '</div><div class="t-role">' + (t.role || 'Client') + '</div></div></div>' +
+        '<div class="t-stars">' + starsHtml + '</div>' +
+        '<div class="t-text">"' + (t.text || '') + '"</div>' +
+        '<div class="t-date"><i class="far fa-clock" style="margin-right:5px;"></i>' + dateStr + '</div>' +
+        '<div class="t-actions">' +
+        '<span class="status-badge ' + statusClass + '">' + statusText + '</span>' +
+        '<label class="switch" style="margin-left:auto;margin-right:10px;"><input type="checkbox" ' + (t.approved ? 'checked' : '') + ' onchange="toggleTestimonialApproval(\'' + id + '\', this.checked)"><span class="slider"></span></label>' +
+        '<button class="card-btn card-btn-delete" onclick="deleteTestimonialAdmin(\'' + id + '\')" style="flex:0;padding:8px 15px;"><i class="fas fa-trash"></i></button>' +
+        '</div>';
+      list.appendChild(card);
+    });
+  });
+}
+
+function toggleTestimonialApproval(id, approved) {
+  db.ref('oldreel/testimonials/' + id + '/approved').set(approved)
+    .then(() => { showToast(approved ? 'Review approved!' : 'Review hidden'); loadTestimonialsAdmin(); })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+function deleteTestimonialAdmin(id) {
+  if (!confirm('Delete this review permanently?')) return;
+  db.ref('oldreel/testimonials/' + id).remove()
+    .then(() => { showToast('Review deleted'); loadTestimonialsAdmin(); })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+// GEAR/APPS ADMIN
+function loadGearAdmin() {
+  const list = document.getElementById('gearList');
+  const empty = document.getElementById('gearEmpty');
+  list.innerHTML = '';
+  db.ref('oldreel/gear').once('value').then(snapshot => {
+    const data = snapshot.val() || {};
+    const entries = Object.entries(data).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+    if (entries.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    entries.forEach(([id, item]) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        '<div style="padding:25px;text-align:center;">' +
+        '<i class="' + (item.icon || 'fas fa-cube') + '" style="font-size:36px;color:var(--gold1);margin-bottom:15px;display:block;"></i>' +
+        '<div class="card-title" style="margin-bottom:5px;">' + (item.name || 'App') + '</div>' +
+        '<div class="card-meta">Order: ' + (item.order || 0) + '</div>' +
+        '<div class="card-actions" style="margin-top:15px;">' +
+        '<button class="card-btn card-btn-edit" onclick="editGearItem(\'' + id + '\')"><i class="fas fa-edit"></i> Edit</button>' +
+        '<button class="card-btn card-btn-delete" onclick="deleteGearItem(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' +
+        '</div></div>';
+      list.appendChild(card);
+    });
+  });
+}
+
+function openGearModal(editId) {
+  editingId = editId;
+  document.getElementById('modalOverlay').classList.add('active');
+  document.getElementById('modalForm').reset();
+  document.getElementById('editId').value = editId || '';
+  const fields = document.getElementById('formFields');
+  fields.innerHTML = '';
+  document.getElementById('modalTitle').textContent = editId ? 'Edit App' : 'Add New App';
+
+  fields.innerHTML =
+    '<div class="form-group"><label>App Name</label><input type="text" class="form-input" id="gName" required placeholder="e.g. Premiere Pro"></div>' +
+    '<div class="form-group"><label>Icon Class <small style="color:var(--gold1)">(Font Awesome, e.g. fas fa-film)</small></label><input type="text" class="form-input" id="gIcon" required placeholder="fas fa-film"></div>' +
+    '<div class="form-group"><label>Order <small style="color:var(--text2)">(lower numbers first)</small></label><input type="number" class="form-input" id="gOrder" value="0" placeholder="0"></div>';
+
+  if (editId) {
+    db.ref('oldreel/gear/' + editId).once('value').then(snapshot => {
+      const item = snapshot.val();
+      if (item) {
+        document.getElementById('gName').value = item.name || '';
+        document.getElementById('gIcon').value = item.icon || '';
+        document.getElementById('gOrder').value = item.order || 0;
+      }
+    });
+  }
+
+  gsap.from('.modal', { opacity: 0, scale: 0.9, y: 30, duration: 0.4, ease: 'power3.out' });
+}
+
+function saveGearItem() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+  const editIdVal = document.getElementById('editId').value;
+
+  const data = {
+    name: document.getElementById('gName').value.trim(),
+    icon: document.getElementById('gIcon').value.trim(),
+    order: parseInt(document.getElementById('gOrder').value) || 0,
+    updatedAt: Date.now()
+  };
+
+  const id = editIdVal || db.ref('oldreel/gear').push().key;
+  db.ref('oldreel/gear/' + id).set(data)
+    .then(() => {
+      closeModal();
+      loadGearAdmin();
+      showToast('App saved successfully!');
+    })
+    .catch(err => showToast(err.message, 'error'));
+  btn.disabled = false; btn.innerHTML = 'Save';
+}
+
+function editGearItem(id) {
+  openGearModal(id);
+}
+
+function deleteGearItem(id) {
+  if (!confirm('Delete this app?')) return;
+  db.ref('oldreel/gear/' + id).remove()
+    .then(() => { loadGearAdmin(); showToast('App deleted!'); })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+// TOAST
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  toastMsg.textContent = msg;
+  toast.className = 'toast ' + (type || '');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// CUSTOM CURSOR
+const cursor = document.getElementById('customCursor');
+let cursorX = 0, cursorY = 0, currentX = 0, currentY = 0;
+document.addEventListener('mousemove', (e) => {
+  cursorX = e.clientX;
+  cursorY = e.clientY;
+});
+function animateCursor() {
+  currentX += (cursorX - currentX) * 0.12;
+  currentY += (cursorY - currentY) * 0.12;
+  cursor.style.left = currentX + 'px';
+  cursor.style.top = currentY + 'px';
+  requestAnimationFrame(animateCursor);
+}
+if (window.innerWidth > 768) animateCursor();
+
+document.querySelectorAll('a, button, .nav-tab, .card-btn, .form-btn, .theme-option, .toggle-row, .add-btn').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+});
+
+// FLOATING BACKGROUND ICONS
+const editingIcons = [
+  'fa-film', 'fa-scissors', 'fa-video', 'fa-clapperboard', 'fa-photo-video',
+  'fa-music', 'fa-cut', 'fa-compact-disc', 'fa-play-circle', 'fa-stopwatch',
+  'fa-sliders-h', 'fa-adjust', 'fa-palette', 'fa-vector-square', 'fa-crop-alt',
+  'fa-tape', 'fa-microphone', 'fa-headphones', 'fa-camera', 'fa-film'
+];
+function createFloatingIcons() {
+  const container = document.getElementById('floatingBg');
+  container.innerHTML = '';
+  const count = 20;
+  for (let i = 0; i < count; i++) {
+    const icon = document.createElement('i');
+    icon.className = 'fas ' + editingIcons[Math.floor(Math.random() * editingIcons.length)] + ' floating-icon';
+    icon.style.left = Math.random() * 100 + '%';
+    icon.style.top = Math.random() * 100 + '%';
+    icon.style.fontSize = (18 + Math.random() * 30) + 'px';
+    icon.style.animationDuration = (15 + Math.random() * 25) + 's';
+    icon.style.animationDelay = (Math.random() * 10) + 's';
+    container.appendChild(icon);
+  }
+}
+createFloatingIcons();
+
+// SCROLL PROGRESS
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = (scrollTop / docHeight) * 100;
+  document.getElementById('scrollProgress').style.width = progress + '%';
+});
+</script>
+</body>
+</html>
